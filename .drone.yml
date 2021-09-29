@@ -1,0 +1,52 @@
+---
+kind: pipeline
+type: docker
+name: linux-amd64
+
+platform: {os: linux, arch: amd64}
+
+steps:
+  - name: push-image
+    image: dweomer/drone-plugins-docker:linux-amd64
+    environment:
+      DOCKER_BUILDKIT: "1"
+    settings:
+      repo: dweomer/virtualbox
+      build_args:
+        - "VIRTUALBOX_VERSION=${DRONE_TAG#v}"
+      username:
+        from_secret: docker_username
+      password:
+        from_secret: docker_password
+      auto_tag: true
+      auto_tag_suffix: linux-amd64
+---
+kind: pipeline
+type: docker
+name: manifest
+
+platform: {os: linux, arch: amd64}
+
+depends_on:
+  - linux-amd64
+
+steps:
+  - name: push-manifest
+    image: plugins/manifest
+    settings:
+      auto_tag: true
+      ignore_missing: true
+      spec: .drone.manifest.tmpl
+      username:
+        from_secret: docker_username
+      password:
+        from_secret: docker_password
+    when:
+      event:
+        include:
+          - tag
+---
+kind: signature
+hmac: a9255e66cdbe624c788617bd7d3b3421b957b8c99d43efd09f7ee1c4dd6aa459
+
+...
